@@ -132,6 +132,14 @@ class Puzzle:
         for mv in next_moves_sorted_mh(self.board):
             self.children.append(Puzzle(make_move(self.board, mv), self.level+1, self, self.goal))
 
+    def previousPuzzles(self):
+        puzzles = [self]
+        curr = self
+        while curr.previous is not None:
+            curr = curr.previous
+            puzzles.append(curr)
+        return puzzles
+
     def __eq__(self, other):
         if type(other) == Puzzle:
             return str(self.board) == str(other.board)
@@ -160,8 +168,9 @@ class Solver:
     def process(self):
         self.open.append(self.start)
         i = 0
-        while i<100:
+        while i<50:
             current = self.open[0]
+            print(current.board, self.f(current), self.h(current))
             self.open.popleft()
             self.closed.append(current)
             
@@ -176,28 +185,16 @@ class Solver:
                     self.open.append(child)
                     
 
-            self.open = deque(sorted(self.open, key=lambda puzzle: self.f(puzzle), reverse=False))
+            self.open = deque(sorted(self.open, key=lambda puzzle: (self.f(puzzle), self.h(puzzle)), reverse=False))
             i += 1
-
-            
-
-
-
-
-
-
-    
-    
 
 #######################
 
 
-start_grid = initialise_board(7, 2, 4, 5, 0, 6, 8, 3, 1)
+start_grid = initialise_board(7,2,4,5,0,6,8,3,1)
 goal = goal_board()
 i = 0
 puzzle = Puzzle(start_grid, i, None, goal)
 
 solver = Solver(puzzle)
 solver.process()
-
-##not working even after 150 iterations wtffff
