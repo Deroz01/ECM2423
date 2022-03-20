@@ -200,4 +200,4 @@ puzzle = Puzzle(start_grid, i, None, goal)
 solver = Solver(puzzle)
 solver.process()
 
-other_goal = goal_board()
+##not working even after 150 iterations wtffff
