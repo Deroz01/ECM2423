@@ -146,32 +146,38 @@ class Puzzle:
         if type(other) == numpy.ndarray:
             return str(self.board) == str(other)
 class Solver:
-    def __init__(self, start):
+    def __init__(self, start, heuristic='MANHATTAN'):
         self.start = start
         self.goal = start.goal
-
-        self.open = deque()
+        self.heuristic = heuristic
+        self.open = []
         self.closed = []
 
     def f(self, current):
         f = self.h(current) + current.level
         return f
 
-    def h(self, current, option='MANHATTAN'):
-        heuristic = 0
-        if option == 'MANHATTAN':
-            heuristic = sum_manhattan(current.board)
+    def h(self, current):
+        h_val = 0
+        if self.heuristic == 'MANHATTAN':
+            h_val = sum_manhattan(current.board)
         else:
-            heuristic = sum_out_of_position(current.board)
-        return heuristic
+            h_val = sum_out_of_position(current.board)
+        return h_val
     
     def process(self):
+        """
+        set current to be the board with the lowest f cost. at the start this will be the starting puzzle
+        remove it from the open list and add to close list
+        if this is the goal then stop here
+        generate all children from the current node and add to the open list if not already or in the closed list
+        sort by f cost, then h cost and repeat
+        """
         self.open.append(self.start)
         i = 0
-        while i<50:
+        while i<100:
             current = self.open[0]
-            print(current.board, self.f(current), self.h(current))
-            self.open.popleft()
+            self.open.pop(0)
             self.closed.append(current)
             
             if current == self.goal:
@@ -183,9 +189,7 @@ class Solver:
                 if child in self.closed: continue
                 if child not in self.open:
                     self.open.append(child)
-                    
-
-            self.open = deque(sorted(self.open, key=lambda puzzle: (self.f(puzzle), self.h(puzzle)), reverse=False))
+            self.open.sort(key=lambda puzzle: (self.f(puzzle), self.h(puzzle)), reverse=False)
             i += 1
 
 #######################
