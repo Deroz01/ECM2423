@@ -83,13 +83,25 @@ def possible_moves(board):
     zero_pos_x, zero_pos_y = zero_pos[1], zero_pos[0]
     moves = []
     if zero_pos_x < 2:
-        moves.append("RIGHT")
+        new_board = copy(board)
+        new_board[zero_pos_y][zero_pos_x] = new_board[zero_pos_y][zero_pos_x+1]
+        new_board[zero_pos_y][zero_pos_x+1] = 0
+        moves.append(new_board)
     if zero_pos_x > 0:
-        moves.append("LEFT")
+        new_board = copy(board)
+        new_board[zero_pos_y][zero_pos_x] = new_board[zero_pos_y][zero_pos_x-1]
+        new_board[zero_pos_y][zero_pos_x-1] = 0
+        moves.append(new_board)
     if zero_pos_y < 2:
-        moves.append("DOWN")
+        new_board = copy(board)
+        new_board[zero_pos_y][zero_pos_x] = new_board[zero_pos_y+1][zero_pos_x]
+        new_board[zero_pos_y+1][zero_pos_x] = 0
+        moves.append(new_board)
     if zero_pos_y > 0:
-        moves.append("UP")
+        new_board = copy(board)
+        new_board[zero_pos_y][zero_pos_x] = new_board[zero_pos_y-1][zero_pos_x]
+        new_board[zero_pos_y-1][zero_pos_x] = 0
+        moves.append(new_board)
 
     return moves
 
@@ -115,17 +127,14 @@ def make_move(board, move):
     
 
 class Puzzle:
-    def __init__(self, board, g_cost, previous, move, goal=goal_board()):
+    def __init__(self, board, g_cost, previous):
         self.board = board
-        self.goal = goal
         self.g_cost = g_cost
         self.previous = previous
         self.children = []
-        self.move = move
     def generateChildren(self):
         for mv in possible_moves(self.board):
-            if not ((mv == 'LEFT' and self.move == 'RIGHT') or (mv == 'RIGHT' and self.move == 'LEFT') or (mv == 'UP' and self.move == 'DOWN') or (mv == 'DOWN' and self.move == 'LEFT')):
-                self.children.append(Puzzle(make_move(self.board, mv), self.g_cost+1, self, mv, self.goal))
+            self.children.append(Puzzle(mv, self.g_cost+1, self))
 
     def previousPuzzles(self):
         puzzles = [self]
@@ -141,9 +150,9 @@ class Puzzle:
         if type(other) == numpy.ndarray:
             return str(self.board) == str(other)
 class Solver:
-    def __init__(self, start, heuristic='MANHATTAN'):
+    def __init__(self, start, goal, heuristic='MANHATTAN'):
         self.start = start
-        self.goal = start.goal
+        self.goal = goal
         self.heuristic = heuristic
         self.open = []
         self.closed = []
@@ -176,7 +185,8 @@ class Solver:
             self.closed.append(current)
             
             if current == self.goal:
-                print("goal reached", i)
+                print("goal reached at iteration:", i)
+                print("f cost of goal:", self.f_cost(current))
                 return
 
             current.generateChildren()
@@ -184,11 +194,8 @@ class Solver:
                 if child in self.closed: continue
                 if child not in self.open:
                     self.open.append(child)
-            self.open.sort(key=lambda puzzle: (self.h_cost(puzzle), self.f_cost(puzzle)), reverse=False)
-            for j in range(4):
-                e = self.open[j]
-                print("(", self.f_cost(e), self.h_cost(e), e.g_cost, end=" )")
-            print("iteration"+str(i))
+            self.open.sort(key=lambda puzzle: (self.f_cost(puzzle), self.h_cost(puzzle)), reverse=False) #finds a solution easily, albeit a much longer f_cost, when i sort it by h_cost then f_cost but not the other way round
+            #print("iteration:", i)
             i += 1
 
 #######################
@@ -197,10 +204,6 @@ class Solver:
 start_grid = initialise_board(7,2,4,5,0,6,8,3,1)
 goal = goal_board()
 
-puzzle = Puzzle(start_grid, 0, None, None, goal)
-mh_solver = Solver(puzzle, heuristic='MANHATTAN')
+puzzle = Puzzle(start_grid, 0, None)
+mh_solver = Solver(puzzle, goal, heuristic='MANHATTAN')
 mh_solver.process()
-
-puzzle_out_pos = Puzzle(start_grid, 0, None, None, goal)
-out_of_pos_solver = Solver(puzzle_out_pos, heuristic='OUT_OF_POSITION')
-out_of_pos_solver.process()
