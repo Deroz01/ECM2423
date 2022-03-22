@@ -112,25 +112,20 @@ def make_move(board, move):
 
     return new_board
 
-def next_moves_sorted_mh(board):
-    moves = possible_moves(board).copy()
-    moves.sort(key=lambda mv: sum_manhattan(make_move(board, mv)), reverse=False)
-    return moves
-
     
 
 class Puzzle:
-    def __init__(self, board, level, previous, move, goal=goal_board()):
+    def __init__(self, board, g_cost, previous, move, goal=goal_board()):
         self.board = board
         self.goal = goal
-        self.level = level
+        self.g_cost = g_cost
         self.previous = previous
         self.children = []
         self.move = move
     def generateChildren(self):
-        for mv in next_moves_sorted_mh(self.board):
+        for mv in possible_moves(self.board):
             if not ((mv == 'LEFT' and self.move == 'RIGHT') or (mv == 'RIGHT' and self.move == 'LEFT') or (mv == 'UP' and self.move == 'DOWN') or (mv == 'DOWN' and self.move == 'LEFT')):
-                self.children.append(Puzzle(make_move(self.board, mv), self.level+1, self, mv, self.goal))
+                self.children.append(Puzzle(make_move(self.board, mv), self.g_cost+1, self, mv, self.goal))
 
     def previousPuzzles(self):
         puzzles = [self]
@@ -153,16 +148,16 @@ class Solver:
         self.open = []
         self.closed = []
 
-    def f(self, current):
-        f = self.h(current) + current.level
+    def f_cost(self, current):
+        f = self.h_cost(current) + current.g_cost
         return f
 
-    def h(self, current):
+    def h_cost(self, current):
         h_val = 0
-        if self.heuristic == 'MANHATTAN':
-            h_val = sum_manhattan(current.board)
-        else:
+        if self.heuristic == 'OUT_OF_POSITION':
             h_val = sum_out_of_position(current.board)
+        else:
+            h_val = sum_manhattan(current.board)
         return h_val
     
     def process(self):
@@ -189,7 +184,11 @@ class Solver:
                 if child in self.closed: continue
                 if child not in self.open:
                     self.open.append(child)
-            self.open.sort(key=lambda puzzle: (self.f(puzzle), self.h(puzzle)), reverse=False)
+            self.open.sort(key=lambda puzzle: (self.h_cost(puzzle), self.f_cost(puzzle)), reverse=False)
+            for j in range(4):
+                e = self.open[j]
+                print("(", self.f_cost(e), self.h_cost(e), e.g_cost, end=" )")
+            print("iteration"+str(i))
             i += 1
 
 #######################
@@ -197,8 +196,11 @@ class Solver:
 
 start_grid = initialise_board(7,2,4,5,0,6,8,3,1)
 goal = goal_board()
-i = 0
-puzzle = Puzzle(start_grid, i, None, None, goal)
 
-solver = Solver(puzzle)
-solver.process()
+puzzle = Puzzle(start_grid, 0, None, None, goal)
+mh_solver = Solver(puzzle, heuristic='MANHATTAN')
+mh_solver.process()
+
+puzzle_out_pos = Puzzle(start_grid, 0, None, None, goal)
+out_of_pos_solver = Solver(puzzle_out_pos, heuristic='OUT_OF_POSITION')
+out_of_pos_solver.process()
