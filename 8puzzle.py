@@ -1,5 +1,7 @@
 import numpy
 from collections import deque
+
+from copy import deepcopy
     
 def empty_board():
     return numpy.zeros((3,3), dtype=int)
@@ -74,11 +76,7 @@ def sum_out_of_position(board, goal=goal_board()):
     return count
 
 def copy(board):
-    grid = empty_board()
-    for i in range(3):
-        for j in range(3):
-            grid[i][j] = board[i][j]
-    return grid
+    return deepcopy(board)
 
 def possible_moves(board):
     zero_pos = tile_pos(board, 0)
@@ -122,15 +120,17 @@ def next_moves_sorted_mh(board):
     
 
 class Puzzle:
-    def __init__(self, board, level, previous, goal=goal_board()):
+    def __init__(self, board, level, previous, move, goal=goal_board()):
         self.board = board
         self.goal = goal
         self.level = level
         self.previous = previous
         self.children = []
+        self.move = move
     def generateChildren(self):
         for mv in next_moves_sorted_mh(self.board):
-            self.children.append(Puzzle(make_move(self.board, mv), self.level+1, self, self.goal))
+            if not ((mv == 'LEFT' and self.move == 'RIGHT') or (mv == 'RIGHT' and self.move == 'LEFT') or (mv == 'UP' and self.move == 'DOWN') or (mv == 'DOWN' and self.move == 'LEFT')):
+                self.children.append(Puzzle(make_move(self.board, mv), self.level+1, self, mv, self.goal))
 
     def previousPuzzles(self):
         puzzles = [self]
@@ -175,13 +175,13 @@ class Solver:
         """
         self.open.append(self.start)
         i = 0
-        while i<100:
+        while True:
             current = self.open[0]
             self.open.pop(0)
             self.closed.append(current)
             
             if current == self.goal:
-                print("goal reached")
+                print("goal reached", i)
                 return
 
             current.generateChildren()
@@ -198,7 +198,7 @@ class Solver:
 start_grid = initialise_board(7,2,4,5,0,6,8,3,1)
 goal = goal_board()
 i = 0
-puzzle = Puzzle(start_grid, i, None, goal)
+puzzle = Puzzle(start_grid, i, None, None, goal)
 
 solver = Solver(puzzle)
 solver.process()
